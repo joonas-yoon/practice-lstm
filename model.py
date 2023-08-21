@@ -25,6 +25,7 @@ class LSTMClassifier(nn.Module):
                             dropout=dropout,
                             bidirectional=bidirectional,
                             num_layers=n_layers,
+                            batch_first=True,
                             device=device)
         fc1_input_dim = hidden_size * n_layers * (2 if self.bidirectional else 1)
         self.fc1 = nn.Linear(in_features=fc1_input_dim,
@@ -39,20 +40,20 @@ class LSTMClassifier(nn.Module):
         batch_size = x.size(0)
         seq_len = x.size(1)
         layers = self.n_layers * (2 if self.bidirectional else 1)
-        h_0 = Variable(torch.zeros(layers, seq_len, self.hidden_size).to(self.device))
-        c_0 = Variable(torch.zeros(layers, seq_len, self.hidden_size).to(self.device))
+        h_0 = Variable(torch.zeros(layers, batch_size, self.hidden_size).to(self.device))
+        c_0 = Variable(torch.zeros(layers, batch_size, self.hidden_size).to(self.device))
 
         output, (final_h, final_c) = self.lstm(x, (h_0, c_0))
         # output = (batch_size, seq_len, hidden_dim)
-        # final_h = (n_layers, seq_len, fc_hidden_size)
+        # final_h = (n_layers, batch_size, fc_hidden_size)
 
-        unpacked = final_h.permute(1, 0, 2).reshape(seq_len, -1)
-        # unpacked = (seq_len, layers * fc_hidden_size)
+        unpacked = final_h.permute(1, 0, 2).reshape(batch_size, -1)
+        # unpacked = (batch_size, layers * fc_hidden_size)
         hidden = self.dropout(unpacked)
 
         output_fc1 = self.fc1(hidden)
-        # output_fc1 = (seq_len, fc_hidden_size)
+        # output_fc1 = (batch_size, fc_hidden_size)
         output_fc2 = self.fc2(output_fc1)
         output_fc2 = self.dropout(output_fc2)
-        # output_fc2 = (seq_len, 6)
+        # output_fc2 = (batch_size, 6)
         return output_fc2
