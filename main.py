@@ -17,7 +17,6 @@ input_tensor = input_tensor.float().to(device)
 
 model = LSTMClassifier(hidden_size=HIDDEN_DIM,
                        output_size=OUTPUT_CLASSES,
-                       n_layers=2,
                        device=device)
 
 output_logit = model(input_tensor)
